@@ -2,9 +2,20 @@
   "config": {
     "step": {
       "user": {
-        "title": "MCP Server (HTTP Transport)",
-        "description": "Choose whether to expose the MCP server for remote HTTP/OIDC clients or local SSE-based desktop clients."
+        "title": "MCP Server"
+      },
+      "remote_http_oidc": {
+        "title": "Claude/Web with OIDC",
+        "description": "Use the remote HTTP transport with OAuth/OIDC authentication. Choose this for Claude or browser-based remote clients."
+      },
+      "local_sse": {
+        "title": "Local SSE without OIDC",
+        "description": "Use the local SSE transport for desktop MCP clients like LM Studio. This mode does not require the OIDC integration. Connect desktop clients to /api/mcp/sse."
       }
+    },
+    "menu_options": {
+      "remote_http_oidc": "Claude/Web with OIDC",
+      "local_sse": "Local SSE without OIDC"
     },
     "abort": {
       "oidc_provider_required": "The OIDC Provider integration is required but not installed. Please install hass-oidc-provider from {oidc_provider_url} first."

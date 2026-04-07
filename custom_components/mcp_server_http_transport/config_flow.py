@@ -1,6 +1,5 @@
 """Config flow for MCP Server."""
 
-import logging
 from typing import Any
 
 import voluptuous as vol
@@ -8,8 +7,6 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 
 from .const import CONF_CONNECTION_MODE, DOMAIN, MODE_LOCAL_SSE, MODE_REMOTE_HTTP_OIDC
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MCPServerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -20,35 +17,48 @@ class MCPServerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.FlowResult:
-        """Handle the initial step."""
+        """Choose the connection mode."""
+        return self.async_show_menu(
+            step_id="user",
+            menu_options=["remote_http_oidc", "local_sse"],
+        )
+
+    async def async_step_remote_http_oidc(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.FlowResult:
+        """Configure the remote HTTP + OIDC mode."""
+        if "oidc_provider" not in self.hass.config_entries.async_domains():
+            return self.async_abort(
+                reason="oidc_provider_required",
+                description_placeholders={
+                    "oidc_provider_url": "https://github.com/ganhammar/hass-oidc-provider"
+                },
+            )
+
         if user_input is not None:
-            connection_mode = user_input[CONF_CONNECTION_MODE]
-            if (
-                connection_mode == MODE_REMOTE_HTTP_OIDC
-                and "oidc_provider" not in self.hass.config_entries.async_domains()
-            ):
-                return self.async_abort(
-                    reason="oidc_provider_required",
-                    description_placeholders={
-                        "oidc_provider_url": "https://github.com/ganhammar/hass-oidc-provider"
-                    },
-                )
-            return self.async_create_entry(title="MCP Server", data=user_input)
+            return self.async_create_entry(
+                title="MCP Server",
+                data={CONF_CONNECTION_MODE: MODE_REMOTE_HTTP_OIDC},
+            )
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_CONNECTION_MODE, default=MODE_REMOTE_HTTP_OIDC
-                    ): vol.In(
-                        {
-                            MODE_REMOTE_HTTP_OIDC: "Remote HTTP + OIDC (Claude/Web)",
-                            MODE_LOCAL_SSE: "Local SSE (LM Studio/Desktop MCP clients)",
-                        }
-                    )
-                }
-            ),
+            step_id="remote_http_oidc",
+            data_schema=vol.Schema({}),
+        )
+
+    async def async_step_local_sse(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.FlowResult:
+        """Configure the local SSE mode."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title="MCP Server",
+                data={CONF_CONNECTION_MODE: MODE_LOCAL_SSE},
+            )
+
+        return self.async_show_form(
+            step_id="local_sse",
+            data_schema=vol.Schema({}),
         )
 
     @staticmethod

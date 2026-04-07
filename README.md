@@ -43,9 +43,9 @@ The remote HTTP/OIDC mode requires [hass-oidc-server](https://github.com/ganhamm
 1. Go to Settings → Devices & Services
 1. Click "Add Integration"
 1. Search for "MCP Server"
-1. Choose one of the configuration modes:
-   - `Remote HTTP + OIDC (Claude/Web)` for browser-based or remote clients
-   - `Local SSE (LM Studio/Desktop MCP clients)` for desktop clients on your local network
+1. Choose one of the setup paths:
+   - `Claude/Web with OIDC` for browser-based or remote clients
+   - `Local SSE without OIDC` for desktop clients on your local network
 
 ## Usage with Claude in Browser
 
@@ -77,6 +77,7 @@ That's it! Claude will now be able to interact with your Home Assistant instance
 Choose `Local SSE (LM Studio/Desktop MCP clients)` during setup to expose an unauthenticated local SSE transport.
 
 - SSE endpoint: `/api/mcp/sse`
+- Do not point LM Studio to `/api/mcp`; that is the remote HTTP transport endpoint and will return `405` to SSE clients
 - The server emits an `endpoint` event that tells the client which per-session POST URL to use
 - Desktop clients that support MCP-over-SSE can then perform normal tool calls without OIDC
 
