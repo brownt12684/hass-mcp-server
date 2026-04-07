@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "MCP Server (HTTP Transport)",
-        "description": "Set up the MCP Server integration for Home Assistant."
+        "description": "Choose whether to expose the MCP server for remote HTTP/OIDC clients or local SSE-based desktop clients."
       }
     },
     "abort": {

@@ -1,5 +1,6 @@
 """Tests for HTTP transport, auth, and JSON-RPC routing."""
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -7,6 +8,8 @@ import pytest
 from custom_components.oidc_provider.token_validator import get_issuer_from_request
 
 from custom_components.mcp_server_http_transport.http import (
+    MCPLocalMessageEndpointView,
+    MCPLocalSSEView,
     MCPEndpointView,
     MCPProtectedResourceMetadataView,
     MCPSubpathProtectedResourceMetadataView,
@@ -280,3 +283,80 @@ class TestMCPEndpointView:
         body = json.loads(response.body)
         assert "error" in body
         assert "Unknown tool" in body["error"]["message"]
+
+
+class TestMCPLocalSSETransport:
+    """Test the local SSE transport."""
+
+    @pytest.fixture
+    def mock_server(self):
+        """Create a mock MCP server."""
+        return Mock()
+
+    @pytest.fixture
+    def mock_hass(self):
+        """Create a mock Home Assistant instance."""
+        hass = Mock()
+        hass.states = Mock()
+        hass.services = Mock()
+        hass.data = {"mcp_server_http_transport": {"sse_sessions": {}}}
+        return hass
+
+    async def test_sse_get_registers_session_and_emits_endpoint_event(self, mock_hass, mock_server):
+        """Test opening the SSE endpoint creates a session and returns the message URI."""
+        request = Mock()
+        request.headers = {}
+        request.url.origin.return_value = "http://127.0.0.1:8123"
+
+        view = MCPLocalSSEView(mock_hass, mock_server)
+
+        writes: list[bytes] = []
+
+        async def capture_write(self, data):
+            writes.append(data)
+
+        with (
+            patch("aiohttp.web.StreamResponse.prepare", new=AsyncMock()),
+            patch("aiohttp.web.StreamResponse.write", new=capture_write),
+            patch("aiohttp.web.StreamResponse.write_eof", new=AsyncMock()),
+            patch(
+                "custom_components.mcp_server_http_transport.http.asyncio.wait_for",
+                side_effect=asyncio.CancelledError,
+            ),
+        ):
+            response = await view.get(request)
+
+        assert response.status == 200
+        assert len(mock_hass.data["mcp_server_http_transport"]["sse_sessions"]) == 0
+        payload = b"".join(writes)
+        assert b"event: endpoint" in payload
+        assert b"/api/mcp/sse/messages/" in payload
+
+    async def test_local_message_post_queues_response(self, mock_hass, mock_server):
+        """Test local message POST enqueues JSON-RPC responses for SSE delivery."""
+        queue = asyncio.Queue()
+        mock_hass.data["mcp_server_http_transport"]["sse_sessions"]["session-1"] = queue
+
+        request = Mock()
+        request.match_info = {"session_id": "session-1"}
+        request.json = AsyncMock(return_value={"jsonrpc": "2.0", "method": "initialize", "id": 7})
+
+        view = MCPLocalMessageEndpointView(mock_hass, mock_server)
+        response = await view.post(request)
+
+        assert response.status == 202
+        queued = await queue.get()
+        assert queued["id"] == 7
+        assert queued["result"]["serverInfo"]["name"] == "home-assistant-mcp-server"
+
+    async def test_local_message_post_returns_404_for_unknown_session(self, mock_hass, mock_server):
+        """Test local message POST rejects expired or unknown sessions."""
+        request = Mock()
+        request.match_info = {"session_id": "missing"}
+
+        view = MCPLocalMessageEndpointView(mock_hass, mock_server)
+        response = await view.post(request)
+
+        assert response.status == 404
+        body = json.loads(response.body)
+        assert body["error"]["message"] == "Unknown or expired SSE session"

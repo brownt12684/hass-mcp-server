@@ -1,13 +1,15 @@
-# MCP Server for Home Assistant (HTTP Transport)
+# MCP Server for Home Assistant
 
-A Home Assistant Custom Component that provides an MCP (Model Context Protocol) server using **HTTP transport**, allowing AI assistants like Claude to interact with your Home Assistant instance.
+A Home Assistant Custom Component that provides an MCP (Model Context Protocol) server for both:
 
-**Note:** Unlike other Home Assistant MCP servers that use SSE (Server-Sent Events), this implementation uses HTTP transport with OAuth 2.0 authentication, making it suitable for remote access and integration with services like Claude in browser.
+- Remote **HTTP transport with OAuth 2.0** for web clients like Claude
+- Local **SSE transport without OIDC** for desktop MCP clients like LM Studio
 
 ## Features
 
-- 🌐 **HTTP transport** (not SSE) - works remotely, not just locally
-- 🔐 **OAuth 2.0 authentication** with Dynamic Client Registration (via [hass-oidc-server](https://github.com/ganhammar/hass-oidc-server))
+- 🌐 Two transport modes: **remote HTTP/OIDC** and **local SSE**
+- 🔐 **OAuth 2.0 authentication** with Dynamic Client Registration for remote/web clients
+- 🖥️ **Local SSE endpoint** for native desktop MCP clients that expect the legacy SSE transport
 - 🏠 Full Home Assistant API access (entities, services, areas, devices, history, statistics)
 - 🔧 Easy HACS installation
 - 📝 CRUD management of automations, scenes, and scripts
@@ -18,7 +20,7 @@ A Home Assistant Custom Component that provides an MCP (Model Context Protocol) 
 
 ## Prerequisites
 
-This plugin requires [hass-oidc-server](https://github.com/ganhammar/hass-oidc-server) to be installed and configured for OIDC authentication.
+The remote HTTP/OIDC mode requires [hass-oidc-server](https://github.com/ganhammar/hass-oidc-server) to be installed and configured. The local SSE mode does not.
 
 ## Installation
 
@@ -41,7 +43,9 @@ This plugin requires [hass-oidc-server](https://github.com/ganhammar/hass-oidc-s
 1. Go to Settings → Devices & Services
 1. Click "Add Integration"
 1. Search for "MCP Server"
-1. Follow the configuration steps
+1. Choose one of the configuration modes:
+   - `Remote HTTP + OIDC (Claude/Web)` for browser-based or remote clients
+   - `Local SSE (LM Studio/Desktop MCP clients)` for desktop clients on your local network
 
 ## Usage with Claude in Browser
 
@@ -67,6 +71,16 @@ The MCP server uses OAuth 2.0 Dynamic Client Registration (DCR), which allows Cl
    - Click "Authorize" to grant access
 
 That's it! Claude will now be able to interact with your Home Assistant instance through the MCP server.
+
+## Usage with Local SSE Clients
+
+Choose `Local SSE (LM Studio/Desktop MCP clients)` during setup to expose an unauthenticated local SSE transport.
+
+- SSE endpoint: `/api/mcp/sse`
+- The server emits an `endpoint` event that tells the client which per-session POST URL to use
+- Desktop clients that support MCP-over-SSE can then perform normal tool calls without OIDC
+
+This mode is intended for local, trusted environments. Do not expose it directly to the public internet.
 
 ## MCP Capabilities
 

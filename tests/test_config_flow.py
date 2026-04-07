@@ -8,6 +8,11 @@ from custom_components.mcp_server_http_transport.config_flow import (
     MCPServerConfigFlow,
     MCPServerOptionsFlowHandler,
 )
+from custom_components.mcp_server_http_transport.const import (
+    CONF_CONNECTION_MODE,
+    MODE_LOCAL_SSE,
+    MODE_REMOTE_HTTP_OIDC,
+)
 
 
 class TestMCPServerConfigFlow:
@@ -22,11 +27,13 @@ class TestMCPServerConfigFlow:
         flow = MCPServerConfigFlow()
         flow.hass = mock_hass
 
-        result = await flow.async_step_user(user_input={})
+        result = await flow.async_step_user(
+            user_input={CONF_CONNECTION_MODE: MODE_REMOTE_HTTP_OIDC}
+        )
 
         assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
         assert result["title"] == "MCP Server"
-        assert result["data"] == {}
+        assert result["data"] == {CONF_CONNECTION_MODE: MODE_REMOTE_HTTP_OIDC}
 
     async def test_user_flow_shows_form_when_no_input(self):
         """Test user flow shows form when no input provided."""
@@ -52,10 +59,26 @@ class TestMCPServerConfigFlow:
         flow = MCPServerConfigFlow()
         flow.hass = mock_hass
 
-        result = await flow.async_step_user(user_input={})
+        result = await flow.async_step_user(
+            user_input={CONF_CONNECTION_MODE: MODE_REMOTE_HTTP_OIDC}
+        )
 
         assert result["type"] == data_entry_flow.FlowResultType.ABORT
         assert result["reason"] == "oidc_provider_required"
+
+    async def test_user_flow_creates_local_sse_entry_without_oidc(self):
+        """Test local SSE mode does not require the OIDC provider."""
+        mock_hass = Mock()
+        mock_hass.config_entries = Mock()
+        mock_hass.config_entries.async_domains = Mock(return_value=[])
+
+        flow = MCPServerConfigFlow()
+        flow.hass = mock_hass
+
+        result = await flow.async_step_user(user_input={CONF_CONNECTION_MODE: MODE_LOCAL_SSE})
+
+        assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+        assert result["data"] == {CONF_CONNECTION_MODE: MODE_LOCAL_SSE}
 
     async def test_version_is_set(self):
         """Test config flow version is set."""
@@ -81,8 +104,8 @@ class TestMCPServerConfigFlow:
 
         result = await flow.async_step_user(user_input=None)
 
-        # Verify the schema is empty (no user input required)
-        assert result["data_schema"].schema == {}
+        keys = [getattr(key, "schema", key) for key in result["data_schema"].schema]
+        assert CONF_CONNECTION_MODE in keys
 
 
 class TestMCPServerOptionsFlow:

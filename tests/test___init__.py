@@ -8,6 +8,10 @@ from custom_components.mcp_server_http_transport import (
     async_setup_entry,
     async_unload_entry,
 )
+from custom_components.mcp_server_http_transport.const import (
+    CONF_CONNECTION_MODE,
+    MODE_LOCAL_SSE,
+)
 
 
 class TestAsyncSetup:
@@ -29,8 +33,12 @@ class TestAsyncSetupEntry:
     @patch("custom_components.mcp_server_http_transport.MCPEndpointView")
     @patch("custom_components.mcp_server_http_transport.MCPProtectedResourceMetadataView")
     @patch("custom_components.mcp_server_http_transport.MCPSubpathProtectedResourceMetadataView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalMessageEndpointView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalSSEView")
     async def test_async_setup_entry_initializes_server(
         self,
+        mock_local_sse_view,
+        mock_local_message_view,
         mock_subpath_view,
         mock_metadata_view,
         mock_endpoint_view,
@@ -54,8 +62,12 @@ class TestAsyncSetupEntry:
     @patch("custom_components.mcp_server_http_transport.MCPEndpointView")
     @patch("custom_components.mcp_server_http_transport.MCPProtectedResourceMetadataView")
     @patch("custom_components.mcp_server_http_transport.MCPSubpathProtectedResourceMetadataView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalMessageEndpointView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalSSEView")
     async def test_async_setup_entry_registers_views(
         self,
+        mock_local_sse_view,
+        mock_local_message_view,
         mock_subpath_view,
         mock_metadata_view,
         mock_endpoint_view,
@@ -73,8 +85,12 @@ class TestAsyncSetupEntry:
     @patch("custom_components.mcp_server_http_transport.MCPEndpointView")
     @patch("custom_components.mcp_server_http_transport.MCPProtectedResourceMetadataView")
     @patch("custom_components.mcp_server_http_transport.MCPSubpathProtectedResourceMetadataView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalMessageEndpointView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalSSEView")
     async def test_async_setup_entry_registers_protected_resource_views(
         self,
+        mock_local_sse_view,
+        mock_local_message_view,
         mock_subpath_view_class,
         mock_metadata_view_class,
         mock_endpoint_view,
@@ -98,8 +114,12 @@ class TestAsyncSetupEntry:
     @patch("custom_components.mcp_server_http_transport.MCPEndpointView")
     @patch("custom_components.mcp_server_http_transport.MCPProtectedResourceMetadataView")
     @patch("custom_components.mcp_server_http_transport.MCPSubpathProtectedResourceMetadataView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalMessageEndpointView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalSSEView")
     async def test_async_setup_entry_registers_endpoint_view(
         self,
+        mock_local_sse_view,
+        mock_local_message_view,
         mock_subpath_view,
         mock_metadata_view,
         mock_endpoint_view_class,
@@ -117,6 +137,38 @@ class TestAsyncSetupEntry:
 
         assert result is True
         mock_endpoint_view_class.assert_called_once_with(mock_hass, mock_server)
+
+    @patch("custom_components.mcp_server_http_transport.Server")
+    @patch("custom_components.mcp_server_http_transport.MCPEndpointView")
+    @patch("custom_components.mcp_server_http_transport.MCPProtectedResourceMetadataView")
+    @patch("custom_components.mcp_server_http_transport.MCPSubpathProtectedResourceMetadataView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalMessageEndpointView")
+    @patch("custom_components.mcp_server_http_transport.MCPLocalSSEView")
+    async def test_async_setup_entry_registers_local_sse_views(
+        self,
+        mock_local_sse_view_class,
+        mock_local_message_view_class,
+        mock_subpath_view,
+        mock_metadata_view,
+        mock_endpoint_view,
+        mock_server_class,
+        mock_hass,
+        mock_config_entry,
+    ):
+        """Test async_setup_entry registers local SSE views when configured."""
+        mock_config_entry.data = {CONF_CONNECTION_MODE: MODE_LOCAL_SSE}
+        mock_server = Mock()
+        mock_server_class.return_value = mock_server
+
+        result = await async_setup_entry(mock_hass, mock_config_entry)
+
+        assert result is True
+        assert mock_hass.http.register_view.call_count == 2
+        mock_local_sse_view_class.assert_called_once_with(mock_hass, mock_server)
+        mock_local_message_view_class.assert_called_once_with(mock_hass, mock_server)
+        mock_endpoint_view.assert_not_called()
+        mock_metadata_view.assert_not_called()
+        mock_subpath_view.assert_not_called()
 
 
 class TestAsyncUnloadEntry:
