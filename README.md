@@ -27,6 +27,8 @@ The remote HTTP/OIDC mode requires [hass-oidc-server](https://github.com/ganhamm
 ### HACS (Recommended)
 
 1. Open HACS in Home Assistant
+1. Open the menu in the top right and choose `Custom repositories`
+1. Add `https://github.com/brownt12684/hass-mcp-server` as an `Integration`
 1. Search for "MCP Server"
 1. Click "Download"
 1. Restart Home Assistant
