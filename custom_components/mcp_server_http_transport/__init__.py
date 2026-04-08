@@ -7,8 +7,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from mcp.server import Server
 
-from .const import CONF_CONNECTION_MODE, DOMAIN, MODE_LOCAL_SSE, MODE_REMOTE_HTTP_OIDC
+from .const import (
+    CONF_CONNECTION_MODE,
+    DOMAIN,
+    MODE_LOCAL_SSE,
+    MODE_LOCAL_STREAMABLE_HTTP,
+    MODE_REMOTE_HTTP_OIDC,
+)
 from .http import (
+    MCPLocalEndpointView,
     MCPLocalMessageEndpointView,
     MCPLocalSSEView,
     MCPEndpointView,
@@ -40,6 +47,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.http.register_view(MCPLocalSSEView(hass, server))
         hass.http.register_view(MCPLocalMessageEndpointView(hass, server))
         _LOGGER.info("MCP Server initialized in local SSE mode at /api/mcp/sse")
+    elif connection_mode == MODE_LOCAL_STREAMABLE_HTTP:
+        hass.http.register_view(MCPLocalEndpointView(hass, server))
+        _LOGGER.info("MCP Server initialized in local Streamable HTTP mode at /api/mcp")
     else:
         hass.http.register_view(MCPProtectedResourceMetadataView())
         hass.http.register_view(MCPSubpathProtectedResourceMetadataView())

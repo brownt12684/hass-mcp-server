@@ -241,6 +241,24 @@ class MCPEndpointView(HomeAssistantView):
         return await _handle_post_request(request, self.handler)
 
 
+class MCPLocalEndpointView(HomeAssistantView):
+    """Unauthenticated local Streamable HTTP MCP endpoint."""
+
+    url = REMOTE_MCP_PATH
+    name = "api:mcp"
+    requires_auth = False
+
+    def __init__(self, hass: HomeAssistant, server: Server) -> None:
+        """Initialize the local MCP endpoint."""
+        self.hass = hass
+        self.server = server
+        self.handler = MCPRequestHandler(hass, server)
+
+    async def post(self, request: web.Request) -> web.Response:
+        """Handle POST requests for local Streamable HTTP MCP messages."""
+        return await _handle_post_request(request, self.handler)
+
+
 class MCPLocalSSEView(HomeAssistantView):
     """Unauthenticated local SSE endpoint for MCP clients."""
 

@@ -12,6 +12,7 @@ CONF_CONNECTION_MODE = "connection_mode"
 # Connection modes
 MODE_REMOTE_HTTP_OIDC = "remote_http_oidc"
 MODE_LOCAL_SSE = "local_sse"
+MODE_LOCAL_STREAMABLE_HTTP = "local_streamable_http"
 
 # HTTP endpoints
 REMOTE_MCP_PATH = "/api/mcp"

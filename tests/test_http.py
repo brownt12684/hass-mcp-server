@@ -8,6 +8,7 @@ import pytest
 from custom_components.oidc_provider.token_validator import get_issuer_from_request
 
 from custom_components.mcp_server_http_transport.http import (
+    MCPLocalEndpointView,
     MCPLocalMessageEndpointView,
     MCPLocalSSEView,
     MCPEndpointView,
@@ -360,3 +361,52 @@ class TestMCPLocalSSETransport:
         assert response.status == 404
         body = json.loads(response.body)
         assert body["error"]["message"] == "Unknown or expired SSE session"
+
+
+class TestMCPLocalStreamableHTTPTransport:
+    """Test the local Streamable HTTP transport."""
+
+    @pytest.fixture
+    def mock_server(self):
+        """Create a mock MCP server."""
+        return Mock()
+
+    @pytest.fixture
+    def mock_hass(self):
+        """Create a mock Home Assistant instance."""
+        hass = Mock()
+        hass.states = Mock()
+        hass.services = Mock()
+        hass.data = {"mcp_server_http_transport": {"sse_sessions": {}}}
+        return hass
+
+    async def test_post_initialize_request_without_auth(self, mock_hass, mock_server):
+        """Test local Streamable HTTP accepts initialize without authentication."""
+        request = Mock()
+        request.headers = {
+            "Accept": "application/json, text/event-stream",
+            "Content-Type": "application/json",
+        }
+        request.json = AsyncMock(return_value={"jsonrpc": "2.0", "method": "initialize", "id": 30})
+
+        view = MCPLocalEndpointView(mock_hass, mock_server)
+        response = await view.post(request)
+
+        assert response.status == 200
+        body = json.loads(response.body)
+        assert body["id"] == 30
+        assert body["result"]["serverInfo"]["name"] == "home-assistant-mcp-server"
+
+    async def test_post_notification_returns_202(self, mock_hass, mock_server):
+        """Test local Streamable HTTP notifications return 202."""
+        request = Mock()
+        request.headers = {
+            "Accept": "application/json, text/event-stream",
+            "Content-Type": "application/json",
+        }
+        request.json = AsyncMock(return_value={"jsonrpc": "2.0", "method": "notifications/initialized"})
+
+        view = MCPLocalEndpointView(mock_hass, mock_server)
+        response = await view.post(request)
+
+        assert response.status == 202

@@ -11,11 +11,16 @@
       "local_sse": {
         "title": "Local SSE without OIDC",
         "description": "Use the local SSE transport for desktop MCP clients like LM Studio. This mode does not require the OIDC integration. Connect desktop clients to /api/mcp/sse."
+      },
+      "local_streamable_http": {
+        "title": "Local Streamable HTTP without OIDC",
+        "description": "Use the local Streamable HTTP transport for MCP clients that expect HTTP transport, including LM Studio via direct HTTP. This mode does not require the OIDC integration. Connect clients to /api/mcp."
       }
     },
     "menu_options": {
       "remote_http_oidc": "Claude/Web with OIDC",
-      "local_sse": "Local SSE without OIDC"
+      "local_sse": "Local SSE without OIDC",
+      "local_streamable_http": "Local Streamable HTTP without OIDC"
     },
     "abort": {
       "oidc_provider_required": "The OIDC Provider integration is required but not installed. Please install hass-oidc-provider from {oidc_provider_url} first."

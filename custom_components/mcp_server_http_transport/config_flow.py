@@ -6,7 +6,13 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 
-from .const import CONF_CONNECTION_MODE, DOMAIN, MODE_LOCAL_SSE, MODE_REMOTE_HTTP_OIDC
+from .const import (
+    CONF_CONNECTION_MODE,
+    DOMAIN,
+    MODE_LOCAL_SSE,
+    MODE_LOCAL_STREAMABLE_HTTP,
+    MODE_REMOTE_HTTP_OIDC,
+)
 
 
 class MCPServerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -20,7 +26,7 @@ class MCPServerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Choose the connection mode."""
         return self.async_show_menu(
             step_id="user",
-            menu_options=["remote_http_oidc", "local_sse"],
+            menu_options=["remote_http_oidc", "local_sse", "local_streamable_http"],
         )
 
     async def async_step_remote_http_oidc(
@@ -58,6 +64,21 @@ class MCPServerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="local_sse",
+            data_schema=vol.Schema({}),
+        )
+
+    async def async_step_local_streamable_http(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.FlowResult:
+        """Configure the local Streamable HTTP mode."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title="MCP Server",
+                data={CONF_CONNECTION_MODE: MODE_LOCAL_STREAMABLE_HTTP},
+            )
+
+        return self.async_show_form(
+            step_id="local_streamable_http",
             data_schema=vol.Schema({}),
         )
 

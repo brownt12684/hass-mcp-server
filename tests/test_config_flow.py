@@ -11,6 +11,7 @@ from custom_components.mcp_server_http_transport.config_flow import (
 from custom_components.mcp_server_http_transport.const import (
     CONF_CONNECTION_MODE,
     MODE_LOCAL_SSE,
+    MODE_LOCAL_STREAMABLE_HTTP,
     MODE_REMOTE_HTTP_OIDC,
 )
 
@@ -33,6 +34,7 @@ class TestMCPServerConfigFlow:
         assert result["step_id"] == "user"
         assert "remote_http_oidc" in result["menu_options"]
         assert "local_sse" in result["menu_options"]
+        assert "local_streamable_http" in result["menu_options"]
 
     async def test_remote_http_oidc_flow_creates_entry(self):
         """Test remote OIDC flow creates the correct entry."""
@@ -105,6 +107,35 @@ class TestMCPServerConfigFlow:
 
         assert result["type"] == data_entry_flow.FlowResultType.FORM
         assert result["step_id"] == "local_sse"
+        assert result["data_schema"].schema == {}
+
+    async def test_local_streamable_http_flow_creates_entry_without_oidc(self):
+        """Test local Streamable HTTP mode does not require the OIDC provider."""
+        mock_hass = Mock()
+        mock_hass.config_entries = Mock()
+        mock_hass.config_entries.async_domains = Mock(return_value=[])
+
+        flow = MCPServerConfigFlow()
+        flow.hass = mock_hass
+
+        result = await flow.async_step_local_streamable_http(user_input={})
+
+        assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+        assert result["data"] == {CONF_CONNECTION_MODE: MODE_LOCAL_STREAMABLE_HTTP}
+
+    async def test_local_streamable_http_flow_shows_form(self):
+        """Test local Streamable HTTP mode shows a confirmation form."""
+        mock_hass = Mock()
+        mock_hass.config_entries = Mock()
+        mock_hass.config_entries.async_domains = Mock(return_value=[])
+
+        flow = MCPServerConfigFlow()
+        flow.hass = mock_hass
+
+        result = await flow.async_step_local_streamable_http(user_input=None)
+
+        assert result["type"] == data_entry_flow.FlowResultType.FORM
+        assert result["step_id"] == "local_streamable_http"
         assert result["data_schema"].schema == {}
 
     async def test_version_is_set(self):
